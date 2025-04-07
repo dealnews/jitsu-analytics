@@ -1,8 +1,8 @@
-= Jitsu Event Sending for PHP
+# Jitsu Event Sending for PHP
 
 This library is for sending events to [Jitsu](https://jitsu.com/).
 
-== Example
+## Example
 
 ```php
 $jitsu = new DealNews\JitsuAnalytics\Send("YOUR WRITE KEY", "YOUR JITSU DOMAIN");
