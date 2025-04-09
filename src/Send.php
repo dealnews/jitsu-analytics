@@ -91,34 +91,45 @@ class Send {
     protected function send(string $type, array $payload): bool {
 
         $success = false;
+        $tries = 0;
 
-        $res = $this->guzzle->request(
-            'POST',
-            "https://{$this->domain}/api/s/{$type}",
-            [
-                'http_errors' => false,
-                'json'        => $payload,
-                'headers'     => [
-                    'Content-type' => 'application/json',
-                    'X-Write-Key'  => $this->write_key
-                ],
-            ]
-        );
+        while ($tries < 3) {
 
-        $body = (string)$res->getBody();
+            $tries++;
 
-        if ($res->getStatusCode() !== 200) {
-            throw new \RuntimeException($body, $res->getStatusCode());
-        }
+            $res = $this->guzzle->request(
+                'POST',
+                "https://{$this->domain}/api/s/{$type}",
+                [
+                    'http_errors' => false,
+                    'json'        => $payload,
+                    'headers'     => [
+                        'Content-type' => 'application/json',
+                        'X-Write-Key'  => $this->write_key
+                    ],
+                ]
+            );
 
-        $data = json_decode($body, true);
+            $body = (string)$res->getBody();
 
-        if (!empty($data['error'])) {
-            throw new \RuntimeException($data['error'], 400);
-        }
+            if ($res->getStatusCode() !== 200) {
+                if ($tries < 3) {
+                    continue;
+                }
+                // Jitsu returns an HTML body when it is failing so strip the tags of the body
+                throw new \RuntimeException(strip_tags($body), $res->getStatusCode());
+            }
 
-        if (!empty($data['ok']) && $data['ok'] === true) {
-            $success = true;
+            $data = json_decode($body, true);
+
+            if (!empty($data['error'])) {
+                throw new \RuntimeException($data['error'], 400);
+            }
+
+            if (!empty($data['ok']) && $data['ok'] === true) {
+                $success = true;
+                break;
+            }
         }
 
         return $success;
